@@ -1,14 +1,15 @@
 # opencode-permission-notify
 
-把 OpenCode 的授权请求变成 macOS 屏幕右上角的原生浮窗，带 **允许一次 / 总是允许 / 拒绝** 三个按钮——
-不用切回 OpenCode 窗口就能批复。
+Approval prompts from OpenCode, as a native macOS floating panel in the top-right
+corner of your screen — with **Allow once / Always / Reject** buttons, so you never
+have to switch back to the OpenCode window to answer.
 
-- **非抢焦**：浮窗是 `NSWindowStyleMaskNonactivatingPanel`，点按钮不会把 OpenCode 顶到前台，也不会打断你正在读的东西
-- **该静就静**：OpenCode 已经在前台时直接不弹（窗口里的提示本来就看得见）
-- **不丢请求**：浮窗点完即时回写；超时 5 分钟自动收起，交还给窗口内的原提示
-- **零依赖**：不装 terminal-notifier，不需要通知权限，二进制随包分发
+- **Non-activating** — the panel is an `NSWindowStyleMaskNonactivatingPanel`; clicking a button does not bring OpenCode forward or interrupt what you are doing
+- **Quiet when it should be** — if OpenCode is already frontmost, nothing pops up
+- **Never lost** — answers are written back immediately; after 5 minutes the panel closes and hands the request back to the in-window prompt
+- **No dependencies** — no terminal-notifier, no notification permission; the helper binary ships with the package
 
-## 安装
+## Install
 
 ```jsonc
 // ~/.config/opencode/opencode.jsonc
@@ -17,7 +18,7 @@
 }
 ```
 
-或者在本地开发时指向目录：
+Or point at a local checkout while developing:
 
 ```jsonc
 {
@@ -25,47 +26,59 @@
 }
 ```
 
-首次加载时会把内置的通用二进制（arm64 + x86_64）释放到
-`~/Library/Application Support/opencode/permission-notify/bin/notify-request`。
+On first load the bundled universal binary (arm64 + x86_64) is extracted to
+`~/Library/Application Support/opencode/permission-notify/bin/notify-request`.
 
-**要求**：macOS、OpenCode V2（桌面版或 TUI 均可，插件跑在服务端）。
+**Requirements**: macOS, OpenCode V2 (desktop or TUI — the plugin runs in the
+server).
 
-## 工作方式
+## How it works
 
 ```
-OpenCode 服务端发出 permission.asked
-   ↓  插件按 location 过滤（只有会话所属目录的实例处理）
-执行 notify-request：
-   前台是 OpenCode → 直接退出，不打扰
-   否则在右上角画浮窗，等你点按钮
-   ↓  stdout 返回按钮序号
+OpenCode server emits permission.asked
+   ↓  the plugin filters by location (only the instance owning the session's
+      directory handles it)
+notify-request:
+   OpenCode is frontmost → exit quietly
+   otherwise draw a panel in the top-right corner and wait for a click
+   ↓  stdout: index of the chosen button
 ctx.permission.reply({ sessionID, requestID, decision })
 ```
 
-按钮对应 `once` / `always` / `reject` 三种 decision。
+The three buttons map to the `once` / `always` / `reject` decisions.
 
-## 配置
+## Configuration
 
-| 环境变量 | 说明 |
+| Environment variable | Description |
 | --- | --- |
-| `PERMISSION_NOTIFY_HELPER` | 覆盖助手路径（一般不用） |
+| `PERMISSION_NOTIFY_HELPER` | Override the helper path (rarely needed) |
 
-日志：`~/Library/Application Support/opencode/permission-notify/notify.log`
+Log file: `~/Library/Application Support/opencode/permission-notify/notify.log`
 
-## 从源码构建
+## Build from source
 
-需要 Xcode Command Line Tools：
+Requires Xcode Command Line Tools:
 
 ```sh
-./build.sh          # 编译通用二进制到 bin/notify-request
+./build.sh          # builds bin/notify-request (universal)
 ```
 
-## 已知限制
+## Limitations
 
-- 仅 macOS
-- 浮窗按请求堆叠（最多 5 个槽位）；同一时刻大量请求会略微重叠
-- 拒绝时不会附带理由文本（OpenCode 支持带反馈的拒绝，这里暂时只回 `reject`）
+- macOS only
+- Panels stack by request (up to five slots); many simultaneous requests overlap slightly
+- Rejections do not carry feedback text yet (OpenCode supports reject-with-reason; this only sends `reject`)
 
-## 许可
+## License
 
 MIT
+
+---
+
+## 中文说明
+
+把 OpenCode 的授权请求变成屏幕右上角的 macOS 原生浮窗，带「允许一次 / 总是允许 / 拒绝」
+三个按钮，不抢焦点、不用切回窗口；OpenCode 已在前台时不弹。通用二进制助手随包分发。
+
+安装：在 `~/.config/opencode/opencode.jsonc` 的 `plugins` 中加 `"opencode-permission-notify"`。
+仅支持 macOS + OpenCode V2。

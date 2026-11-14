@@ -1,0 +1,27 @@
+{
+  "name": "opencode-permission-notify",
+  "version": "0.1.0",
+  "description": "macOS 原生浮窗，把 OpenCode 的授权请求变成右上角带按钮的通知：允许一次 / 总是允许 / 拒绝，不用切回窗口。",
+  "type": "module",
+  "license": "MIT",
+  "author": "Mingpei Wang",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "macos",
+    "notification",
+    "permission"
+  ],
+  "os": [
+    "darwin"
+  ]
+}

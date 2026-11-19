@@ -1,0 +1,24 @@
+## 第 4 条：类 1 触发真弹窗，标题「OpenCode 需要授权」，正文不超过四行
+服务端：test/serve-isolated.sh real（真助手 notify-request），PERMISSION_NOTIFY_ASK_TIMEOUT_S=45；场景 p5-plain（只有全局宿主规则）
+
+### 4a 单条：A p5-real shell "rm -rf build"（宿主 rm * ask，类 1）
+截图：4a-popup-single-crop.png（标题 + 一行正文 + 三个按钮）
+注：这一条弹出约 3 秒后被人在屏幕上点了「总是允许」（不是脚本操作），存下的授权只写在 test/run/grants.json，随后已删除；请求本身是直接断言，没有任何命令被执行。
+{"v":2,"ts":"2026-11-19T18:07:08.243Z","session":"ses_e0b0269b4ffeUydQV5ebgySIz0","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["rm -rf build"],"host_effect":"ask","host_rule":{"action":"shell","resource":"rm *","effect":"ask"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"human","reason":"不可逆或提权的命令","why":"宿主规则要求询问","effect":"allow","batch":"bat_mwnv428xy8cc","by":"popup","answer":"always"}
+
+### 4b 同一会话同时来 6 条类 1：合并成一个弹窗，正文 4 行
+辅助功能读出的弹窗文字（osascript → System Events → process "notify-request"）：
+  OpenCode 需要授权, rm -rf out / npm publish / rm -rf coverage / …另 2 项
+弹窗个数：1；随后用 osascript 点「拒绝」，5 条一起被拒。截图：4b-popup-batch-crop.png
+
+台账（6 条里有 5 条进了这一批）：
+{"v":2,"ts":"2026-11-19T18:07:53.770Z","session":"ses_e0b0269b4ffeUydQV5ebgySIz0","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["git push origin main"],"host_effect":"allow","host_rule":{"action":"shell","resource":"*","effect":"allow"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"pm","reason":"对外发布或发送数据","why":"宿主规则放行，默认 human 取更省事一档 pm","effect":"allow","note":"pm-offline"}
+{"v":2,"ts":"2026-11-19T18:07:56.686Z","session":"ses_e0b0269b4ffeUydQV5ebgySIz0","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["rm -rf out"],"host_effect":"ask","host_rule":{"action":"shell","resource":"rm *","effect":"ask"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"human","reason":"不可逆或提权的命令","why":"宿主规则要求询问","effect":"deny","batch":"bat_mwnv548bbqro","by":"popup","answer":"reject"}
+{"v":2,"ts":"2026-11-19T18:07:56.686Z","session":"ses_e0b0269b4ffeUydQV5ebgySIz0","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["npm publish"],"host_effect":"ask","host_rule":{"action":"shell","resource":"npm publish*","effect":"ask"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"human","reason":"对外发布或发送数据","why":"宿主规则要求询问","effect":"deny","batch":"bat_mwnv548bbqro","by":"popup","answer":"reject"}
+{"v":2,"ts":"2026-11-19T18:07:56.686Z","session":"ses_e0b0269b4ffeUydQV5ebgySIz0","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["rm -rf coverage"],"host_effect":"ask","host_rule":{"action":"shell","resource":"rm *","effect":"ask"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"human","reason":"不可逆或提权的命令","why":"宿主规则要求询问","effect":"deny","batch":"bat_mwnv548bbqro","by":"popup","answer":"reject"}
+{"v":2,"ts":"2026-11-19T18:07:56.686Z","session":"ses_e0b0269b4ffeUydQV5ebgySIz0","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["rm -rf dist"],"host_effect":"ask","host_rule":{"action":"shell","resource":"rm *","effect":"ask"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"human","reason":"不可逆或提权的命令","why":"宿主规则要求询问","effect":"deny","batch":"bat_mwnv548bbqro","by":"popup","answer":"reject"}
+{"v":2,"ts":"2026-11-19T18:07:56.686Z","session":"ses_e0b0269b4ffeUydQV5ebgySIz0","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["sudo ls /var/root"],"host_effect":"ask","host_rule":{"action":"shell","resource":"sudo *","effect":"ask"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"human","reason":"不可逆或提权的命令","why":"宿主规则要求询问","effect":"deny","batch":"bat_mwnv548bbqro","by":"popup","answer":"reject"}
+
+### 观察到的问题（未改，交给决策）
+git push origin main 也是类 1，但宿主只有通配 shell * allow 命中，按规格第 3 条降一档成 pm；案头未接入，pm 按 pm-offline 放行，5ms 返回 allow，没有弹窗。
+这与装插件之前（宿主 allow 直接放行）一样，不算回退；但在日常配置下，类 1 里被 shell * allow 兜住的命令（git push、gh pr create、curl -X POST、scp 等）目前不会问人。

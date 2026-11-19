@@ -23,5 +23,15 @@
   ],
   "os": [
     "darwin"
-  ]
+  ],
+  "devDependencies": {
+    "@opencode/plugin": "^2.3.2",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p .",
+    "test": "node --experimental-strip-types --test test/classes.test.ts test/stale.test.ts",
+    "build": "./build.sh"
+  }
 }

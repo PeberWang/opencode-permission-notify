@@ -1,0 +1,16 @@
+## 第 1 条：宿主加一条 shell allow，项目内 shell 不再弹窗
+
+### 1a 基线 p0-ask：宿主 printf pn-* ask
+$ A p0-ask shell "printf pn-one"
+{"status": 200, "ms": 1641, "body": {"data": {"id": "per_1f4fb9323001rv9ytAMRly7uPn", "effect": "deny"}}}
+--- 替身弹窗调用记录（有一行 = 真机会弹窗；替身点了「拒绝」）
+2026-11-19T18:04:49 fake-helper --title OpenCode 需要授权 --message printf pn-one --buttons 允许一次|总是允许|拒绝 --slot 0 --timeout 300
+--- 台账新增行
+{"v":2,"ts":"2026-11-19T18:04:50.338Z","session":"ses_e0b0485cdffeFAReW57cbFCZdU","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["printf pn-one"],"host_effect":"ask","host_rule":{"action":"shell","resource":"printf pn-*","effect":"ask"},"class":"3","class_name":"项目内执行","source":"host","tier":"human","reason":"项目内执行","why":"宿主规则要求询问","effect":"deny","batch":"bat_mwnv15fkhkhu","by":"popup","answer":"reject"}
+
+### 1b p1-allow：同一条 ask 之后再加 { shell, "printf pn-*", allow }
+$ A p1-allow shell "printf pn-one"
+{"status": 200, "ms": 4, "body": {"data": {"id": "per_1f4fb93be001Te9AeHKAXdsREe", "effect": "allow"}}}
+--- 替身弹窗调用次数：0
+--- 台账新增行
+{"v":2,"ts":"2026-11-19T18:04:50.494Z","session":"ses_e0b048460ffeuWuqpuq7rDxNqz","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["printf pn-one"],"host_effect":"allow","host_rule":{"action":"shell","resource":"printf pn-*","effect":"allow"},"class":"3","class_name":"项目内执行","source":"host","tier":"silent","reason":"项目内执行","why":"宿主规则放行，默认 pm 取更省事一档 silent","effect":"allow"}

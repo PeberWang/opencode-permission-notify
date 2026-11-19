@@ -1,0 +1,9 @@
+2026-11-19T00:31:00 fake-helper --title OpenCode 需要授权 --message 动作：external_directory
+资源：
+/tmp/pn-race-late/* --buttons 允许一次|总是允许|拒绝 --skip-if-frontmost ai.opencode.desktop --slot 0 --timeout 300
+2026-11-19T00:31:05 fake-helper --title OpenCode 需要授权 --message 动作：external_directory
+资源：
+/tmp/pn-race-late/* --buttons 允许一次|总是允许|拒绝 --skip-if-frontmost ai.opencode.desktop --slot 0 --timeout 300
+2026-11-19T00:31:11 fake-helper --title OpenCode 需要授权 --message 动作：external_directory
+资源：
+/tmp/pn-race-human/* --buttons 允许一次|总是允许|拒绝 --skip-if-frontmost ai.opencode.desktop --slot 0 --timeout 300

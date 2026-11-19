@@ -1,0 +1,22 @@
+## 第 3 条：宿主 deny，插件任何设置都放不开
+$ cat test/run/settings.json
+{"permissionClasses":{"1":"silent","2":"silent","3":"silent","4":"silent","5":"silent","6":"silent"}}
+
+### 3a 直接断言（p3-deny：宿主 printf pn-* deny）
+$ A p3-deny shell "printf pn-three"
+{"status": 200, "ms": 3, "body": {"data": {"id": "per_1f4fb94a3001EFsdis2emtMgDC", "effect": "deny"}}}
+--- 台账新增行数：0（OpenCode 对显式 deny 不调用 evaluate 钩子，插件拿不到这次判定，也就无从放宽）
+
+### 3b 真实工具调用（模型在 p3-deny 里跑 shell）
+$ opencode run --server <私有> … "执行 printf pn-three-tool > deny-proof.txt"
+[0m✗ [0mprintf pn-three-tool > deny-proof.txt failed
+[91m[1mError: [0mPermission denied: shell
+> build · deepseek-flash
+命令被拒绝了，工具返回的原文如下：
+```json
+{"error":{"type":"permission.rejected","message":"Permission denied: shell"},"content":[]}
+```
+到此结束。
+--- deny-proof.txt 是否生成：没有生成
+--- 台账新增行（从工具报错补记）
+{"v":2,"ts":"2026-11-19T18:04:52.517Z","session":"ses_e0b046b2affeV4GEIJiMJ6jcE5","who":"会话 iMJ6jcE5（build）","agent":"build","call":"call_00_kXY96GTdv9VnY5aQrEra1239","tool":"shell","action":"shell","resources":["printf pn-three-tool > deny-proof.txt"],"host_effect":"deny","host_rule":{"action":"shell","resource":"printf pn-*","effect":"deny"},"class":"3","class_name":"项目内执行","source":"host","tier":"deny","reason":"项目内执行","why":"宿主规则拒绝（未经过 evaluate 钩子，从工具报错补记）","effect":"deny","note":"observed-after","error":"Unable to execute command: printf pn-three-tool > deny-proof.txt"}

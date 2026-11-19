@@ -1,0 +1,15 @@
+## 第 7 条补充：真实会话里的一串工具调用（读、列目录、写、执行），每次判定一行
+（服务端此时同时加载了 4 个场景位置的插件实例，用来检查多实例下不重复记账）
+[0m→ [0mRead src/a.ts 
+[0m← [0mWrite note.md
+Created file successfully: note.md
+[0m✱ [0mGlob "**/*.ts" [90m1 match[0m
+[0m$ [0mprintf pn-five
+pn-five
+> build · deepseek-flash
+done
+--- 本次会话新增台账行数：4
+{"v":2,"ts":"2026-11-19T18:04:55.228Z","session":"ses_e0b045e6cffeFmoPR9sh1YxG27","who":"会话「pn-accept-mixed」（build）","agent":"build","call":"call_00_ET_fjY6Gf7qGYrXX4JvlrUN2927","tool":"read","action":"read","resources":["src/a.ts"],"host_effect":"allow","host_rule":{"action":"read","resource":"*","effect":"allow"},"class":"5","class_name":"项目内只读","source":"host","tier":"silent","reason":"项目内只读","why":"宿主规则放行，默认 silent 取更省事一档 silent","effect":"allow"}
+{"v":2,"ts":"2026-11-19T18:04:55.228Z","session":"ses_e0b045e6cffeFmoPR9sh1YxG27","who":"会话「pn-accept-mixed」（build）","agent":"build","call":"call_01_ET_zHuVnp1XUgFPp8eGLdZI9031","tool":"glob","action":"glob","resources":["**/*.ts"],"host_effect":"allow","host_rule":null,"class":"6","class_name":"无副作用","source":"default","tier":"silent","reason":"列目录","why":"类 6 默认 silent","effect":"allow"}
+{"v":2,"ts":"2026-11-19T18:04:55.236Z","session":"ses_e0b045e6cffeFmoPR9sh1YxG27","who":"会话「pn-accept-mixed」（build）","agent":"build","call":"call_03_ET_0WxzlcO9LFwZDc5jeVU28327","tool":"shell","action":"shell","resources":["printf pn-five"],"host_effect":"allow","host_rule":{"action":"shell","resource":"*","effect":"allow"},"class":"3","class_name":"项目内执行","source":"host","tier":"silent","reason":"项目内执行","why":"宿主规则放行，默认 pm 取更省事一档 silent","effect":"allow"}
+{"v":2,"ts":"2026-11-19T18:04:55.237Z","session":"ses_e0b045e6cffeFmoPR9sh1YxG27","who":"会话「pn-accept-mixed」（build）","agent":"build","call":"call_02_ET_QdXk5tYDFbrQAGCcyq233035","tool":"write","action":"edit","resources":["note.md"],"host_effect":"allow","host_rule":{"action":"edit","resource":"*","effect":"allow"},"class":"4","class_name":"项目内写入","source":"host","tier":"silent","reason":"项目内写入","why":"宿主规则放行，默认 pm 取更省事一档 silent","effect":"allow"}

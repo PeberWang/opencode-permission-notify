@@ -1,0 +1,8 @@
+## 第 2 条：宿主 ask，设置里把类 3 显式设为 silent
+$ cat test/run/settings.json   （插件自己的设置文件，不碰宿主配置；服务端不重启）
+{"permissionClasses":{"3":"silent"}}
+$ A p0-ask shell "printf pn-two"
+{"status": 200, "ms": 4, "body": {"data": {"id": "per_1f4fb9431001lyEhVurWvPtqil", "effect": "allow"}}}
+--- 替身弹窗调用次数：0
+--- 台账新增行
+{"v":2,"ts":"2026-11-19T18:04:50.609Z","session":"ses_e0b0485cdffeFAReW57cbFCZdU","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["printf pn-two"],"host_effect":"ask","host_rule":{"action":"shell","resource":"printf pn-*","effect":"ask"},"class":"3","class_name":"项目内执行","source":"user","tier":"silent","reason":"项目内执行","why":"用户设置类 3 为 silent","effect":"allow"}

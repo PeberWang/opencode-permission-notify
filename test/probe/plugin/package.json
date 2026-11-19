@@ -1,0 +1,6 @@
+{
+  "name": "permission-probe",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./index.ts" }
+}

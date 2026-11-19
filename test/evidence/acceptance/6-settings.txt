@@ -1,0 +1,34 @@
+## 第 6 条：设置窗口六行三选一可见可改，改完立刻用一条命令验证生效
+窗口：bin/permission-settings --settings test/run/settings.json --ledger test/run/ledger.jsonl
+改前截图 6a-settings-before.png（默认表；类 1 标「跟随宿主」，因台账里最近一次类 1 判定由宿主 ask 决定）
+操作：osascript 点「类 3 静默 silent」（等同鼠标点选）；改后截图 6b-settings-after.png，类 3 来源变「用户改过」
+--- 窗口写回的设置文件
+{
+  "permissionClasses" : {
+    "3" : "silent"
+  }
+}
+--- 窗口自身的状态输出
+$ bin/permission-settings --settings test/run/settings.json --ledger test/run/ledger.jsonl --print
+  {"class": "1", "detail": "跟随宿主（最近一次：shell sudo * ask → human）", "label": "跟随宿主 · 最近 ask → human", "source": "host", "tier": "human"}
+  {"class": "2", "label": "默认", "source": "default", "tier": "pm"}
+  {"class": "3", "label": "用户改过", "source": "user", "tier": "silent"}
+  {"class": "4", "label": "默认", "source": "default", "tier": "pm"}
+  {"class": "5", "label": "默认", "source": "default", "tier": "silent"}
+  {"class": "6", "label": "默认", "source": "default", "tier": "silent"}
+
+### 一条命令验证（real 服务端，p0-ask 宿主 printf pn-* ask，服务端未重启）
+$ PN_DIR=…/p0-ask python3 -I test/accept.py assert <p0> shell "printf pn-six" && tail -1 test/run/ledger.jsonl
+{"status": 200, "ms": 5, "body": {"data": {"id": "per_1f5000fdd001GW0veOInxYLP0c", "effect": "allow"}}}
+{"v":2,"ts":"2026-11-19T18:09:44.413Z","session":"ses_e0afff925ffenyaIf8wgcNpsem","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["printf pn-six"],"host_effect":"ask","host_rule":{"action":"shell","resource":"printf pn-*","effect":"ask"},"class":"3","class_name":"项目内执行","source":"user","tier":"silent","reason":"项目内执行","why":"用户设置类 3 为 silent","effect":"allow"}
+
+### 反向：窗口里点类 3「恢复默认」，同一条命令重新交给人
+--- 设置文件
+{
+  "permissionClasses" : {
+
+  }
+}
+--- 弹窗文字：OpenCode 需要授权, printf pn-seven
+{"status": 200, "ms": 2641, "body": {"data": {"id": "per_1f50036e2001QanOEbxfi89IfV", "effect": "deny"}}}
+{"v":2,"ts":"2026-11-19T18:09:54.402Z","session":"ses_e0afff925ffenyaIf8wgcNpsem","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["printf pn-seven"],"host_effect":"ask","host_rule":{"action":"shell","resource":"printf pn-*","effect":"ask"},"class":"3","class_name":"项目内执行","source":"host","tier":"human","reason":"项目内执行","why":"宿主规则要求询问","effect":"deny","batch":"bat_mwnv7n9wtd0f","by":"popup","answer":"reject"}

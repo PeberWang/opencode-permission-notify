@@ -1,0 +1,11 @@
+## 第 5 条：类 5 与类 6 静默，台账各有对应行
+$ A p5-plain read src/a.ts
+{"status": 200, "ms": 4, "body": {"data": {"id": "per_1f4fba08d001S2ZTQhEKPx293z", "effect": "allow"}}}
+{"v":2,"ts":"2026-11-19T18:04:53.773Z","session":"ses_e0b048102ffe5MazUsxJAGMyGg","who":"会话「pn-accept」（build）","agent":"build","action":"read","resources":["src/a.ts"],"host_effect":"allow","host_rule":{"action":"read","resource":"*","effect":"allow"},"class":"5","class_name":"项目内只读","source":"host","tier":"silent","reason":"项目内只读","why":"宿主规则放行，默认 silent 取更省事一档 silent","effect":"allow"}
+$ A p5-plain glob "**/*.ts"
+{"status": 200, "ms": 3, "body": {"data": {"id": "per_1f4fba0fa001kQaRhRrY19uhI0", "effect": "allow"}}}
+{"v":2,"ts":"2026-11-19T18:04:53.882Z","session":"ses_e0b048102ffe5MazUsxJAGMyGg","who":"会话「pn-accept」（build）","agent":"build","action":"glob","resources":["**/*.ts"],"host_effect":"allow","host_rule":null,"class":"6","class_name":"无副作用","source":"default","tier":"silent","reason":"列目录","why":"类 6 默认 silent","effect":"allow"}
+$ A p5-plain webfetch https://example.com
+{"status": 200, "ms": 3, "body": {"data": {"id": "per_1f4fba166001Zy2vTaua2NJBR8", "effect": "allow"}}}
+{"v":2,"ts":"2026-11-19T18:04:53.990Z","session":"ses_e0b048102ffe5MazUsxJAGMyGg","who":"会话「pn-accept」（build）","agent":"build","action":"webfetch","resources":["https://example.com"],"host_effect":"allow","host_rule":null,"class":"6","class_name":"无副作用","source":"default","tier":"silent","reason":"查询类","why":"类 6 默认 silent","effect":"allow"}
+--- 替身弹窗调用次数：0

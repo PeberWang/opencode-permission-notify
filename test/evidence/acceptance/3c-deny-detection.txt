@@ -1,0 +1,20 @@
+## 补充（当前代码）：宿主 deny 补记判据 = Permission.BlockedError
+
+### 反例：项目内 chmod 000 的文件，read 工具 EACCES 失败，不应记成宿主 deny
+```
+{"error":{"type":"tool.execution","message":"Unable to read locked/f.txt"},"content":[]}
+```
+即文件读取被拒绝，我拿不到 `locked/f.txt` 的原文。
+--- 台账（注：serve-isolated.sh 会把台账固定写到 test/run/ledger.jsonl，以下取自那里）
+{"v":2,"ts":"2026-11-19T18:13:26.369Z","session":"ses_e0afc91e2ffe35DhYwOTpXMCZa","who":"会话「pn-accept-eacces2」（build）","agent":"build","call":"call_00_YPZl2CLQ1JVHBi2ht0fO9922","tool":"read","action":"read","resources":["locked/f.txt"],"host_effect":"allow","host_rule":{"action":"read","resource":"*","effect":"allow"},"class":"5","class_name":"项目内只读","source":"host","tier":"silent","reason":"项目内只读","why":"宿主规则放行，默认 silent 取更省事一档 silent","effect":"allow"}
+{"v":2,"ts":"2026-11-19T18:13:28.110Z","session":"ses_e0afc91e2ffe35DhYwOTpXMCZa","who":"会话「pn-accept-eacces2」（build）","agent":"build","call":"call_00_AfDhiD590i2rr06JNe5n7668","tool":"read","action":"read","resources":["locked/f.txt"],"host_effect":"allow","host_rule":{"action":"read","resource":"*","effect":"allow"},"class":"5","class_name":"项目内只读","source":"host","tier":"silent","reason":"项目内只读","why":"宿主规则放行，默认 silent 取更省事一档 silent","effect":"allow"}
+（两行都是 read 自身的放行判定，模型重试了一次；没有 observed-after 的 deny 行）
+
+### 正例：命令文本里不含 deny 等字样的宿主 deny，也要补记
+```json
+{"error":{"type":"permission.rejected","message":"Permission denied: shell"},"content":[]}
+```
+命令被权限拦截，没有执行。
+--- out.txt：没有生成
+--- 台账新增行（取自 test/run/ledger.jsonl）
+{"v":2,"ts":"2026-11-19T18:13:30.586Z","session":"ses_e0afc818cffeU10j3gWlfsBq9o","who":"会话 WlfsBq9o（build）","agent":"build","call":"call_00_pPboPi9FhYdqOJnmhIRH1774","tool":"shell","action":"shell","resources":["printf pn-blocked > out.txt"],"host_effect":"deny","host_rule":{"action":"shell","resource":"printf pn-*","effect":"deny"},"class":"3","class_name":"项目内执行","source":"host","tier":"deny","reason":"项目内执行","why":"宿主规则拒绝（未经过 evaluate 钩子，从工具报错补记）","effect":"deny","note":"observed-after","error":"Unable to execute command: printf pn-blocked > out.txt"}

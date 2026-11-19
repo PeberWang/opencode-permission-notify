@@ -1,0 +1,50 @@
+## 第 8 条：类型检查与构建
+
+$ npm run typecheck
+
+> opencode-permission-notify@0.1.1 typecheck
+> tsc --noEmit -p .
+
+exit=0
+
+$ npm test
+✔ 项目外目录：读归类 2，写归类 1，凭证读归类 1，判不清归类 1 (2.092ms)
+✔ 项目内：读归类 5，列目录归类 6，写入归类 4，删除与 .env 归类 1 (0.233958ms)
+✔ shell：不可逆、提权、对外发布、写到项目外归类 1，其余归类 3 (0.503042ms)
+✔ 查询类与 MCP：查询归类 6，发送、删除、写入外部系统归类 1 (0.422958ms)
+✔ 宿主规则匹配：内置兜底不算，后匹配者优先，「 *」也匹配无参数命令 (0.165625ms)
+✔ 合成五条：deny 不放宽，用户显式优先，宿主 allow 取更省事一档、ask 交给人，无规则用默认 (0.121ms)
+✔ 设置解析只收合法项；弹窗正文不超过四行 (0.088709ms)
+✔ 命令解析与授权覆盖 (0.082209ms)
+✔ 请求已经不在：不弹窗，记 stale，助手没有被调用 (155.908083ms)
+✔ 正常请求：弹出后回复成功，记 ok，OpenCode 侧收到决定 (1179.730042ms)
+✔ 点击后、发回复前请求已消失：关闭弹窗，不发送回复，记 stale (1185.457834ms)
+✔ 确认与发送之间请求消失：reply 报 not found，按已处理记 stale，不算错误 (1077.6105ms)
+✔ 真正的回复错误：记 error，与 stale 区分 (1071.666916ms)
+✔ 弹窗开着时请求在别处被处理：收回窗口，记 stale (1944.649166ms)
+✔ 死进程留下的锁会被接管，下一个请求照常弹出 (1080.140291ms)
+✔ 查不到待处理列表时照常弹窗，reply 成功记 ok (1069.960375ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9000.464833
+exit=0
+
+$ ./build.sh
+==> 编译 notify-request（arm64 + x86_64）
+    Architectures in the fat file: bin/notify-request are: x86_64 arm64 
+==> 编译 permission-settings（arm64 + x86_64）
+    Architectures in the fat file: bin/permission-settings are: x86_64 arm64 
+exit=0
+
+$ file bin/*
+bin/notify-request:      Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64:Mach-O 64-bit executable arm64]
+bin/notify-request (for architecture x86_64):	Mach-O 64-bit executable x86_64
+bin/notify-request (for architecture arm64):	Mach-O 64-bit executable arm64
+bin/permission-settings: Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64:Mach-O 64-bit executable arm64]
+bin/permission-settings (for architecture x86_64):	Mach-O 64-bit executable x86_64
+bin/permission-settings (for architecture arm64):	Mach-O 64-bit executable arm64

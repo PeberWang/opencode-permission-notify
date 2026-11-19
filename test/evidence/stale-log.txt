@@ -1,0 +1,33 @@
+2026-11-19T14:38:27.764Z started v0.1.1+classes pid=55374 dir=/var/folders/ys/htgd5l2d5glftgwc7d2gdkq40000gn/T/pn-stale-hmPP3U src=file:///Users/mingpeiwang/Desktop/Code%E5%B7%A5%E4%BD%9C%E5%8C%BA/permission-notify/src/index.ts
+2026-11-19T14:38:27.765Z published event per_test action=external_directory
+2026-11-19T14:38:27.917Z stale per_test: already resolved elsewhere (stage=before-popup, not shown, 152ms) outcome=stale
+2026-11-19T14:38:27.919Z started v0.1.1+classes pid=55374 dir=/var/folders/ys/htgd5l2d5glftgwc7d2gdkq40000gn/T/pn-stale-hmPP3U src=file:///Users/mingpeiwang/Desktop/Code%E5%B7%A5%E4%BD%9C%E5%8C%BA/permission-notify/src/index.ts
+2026-11-19T14:38:27.919Z published event per_test action=external_directory
+2026-11-19T14:38:29.000Z replied per_test -> once after 1080ms outcome=ok
+2026-11-19T14:38:29.049Z started v0.1.1+classes pid=55374 dir=/var/folders/ys/htgd5l2d5glftgwc7d2gdkq40000gn/T/pn-stale-hmPP3U src=file:///Users/mingpeiwang/Desktop/Code%E5%B7%A5%E4%BD%9C%E5%8C%BA/permission-notify/src/index.ts
+2026-11-19T14:38:29.050Z published event per_test action=external_directory
+2026-11-19T14:38:30.175Z stale per_test: already resolved elsewhere (stage=before-reply, once not sent, popup closed, 1125ms) outcome=stale
+2026-11-19T14:38:30.228Z started v0.1.1+classes pid=55374 dir=/var/folders/ys/htgd5l2d5glftgwc7d2gdkq40000gn/T/pn-stale-hmPP3U src=file:///Users/mingpeiwang/Desktop/Code%E5%B7%A5%E4%BD%9C%E5%8C%BA/permission-notify/src/index.ts
+2026-11-19T14:38:30.229Z published event per_test action=external_directory
+2026-11-19T14:38:31.253Z stale per_test: already resolved elsewhere (stage=reply, once was not applied, Error: Permission request not found: per_test) outcome=stale
+2026-11-19T14:38:31.303Z started v0.1.1+classes pid=55374 dir=/var/folders/ys/htgd5l2d5glftgwc7d2gdkq40000gn/T/pn-stale-hmPP3U src=file:///Users/mingpeiwang/Desktop/Code%E5%B7%A5%E4%BD%9C%E5%8C%BA/permission-notify/src/index.ts
+2026-11-19T14:38:31.304Z published event per_test action=external_directory
+2026-11-19T14:38:32.328Z error per_test: reply failed (once): Error: socket hang up outcome=error stage=reply
+2026-11-19T14:38:32.379Z started v0.1.1+classes pid=55374 dir=/var/folders/ys/htgd5l2d5glftgwc7d2gdkq40000gn/T/pn-stale-hmPP3U src=file:///Users/mingpeiwang/Desktop/Code%E5%B7%A5%E4%BD%9C%E5%8C%BA/permission-notify/src/index.ts
+2026-11-19T14:38:32.379Z published event per_test action=external_directory
+2026-11-19T14:38:34.288Z stale per_test: already resolved elsewhere (stage=while-open, popup withdrawn, 1908ms) outcome=stale
+2026-11-19T14:38:34.327Z started v0.1.1+classes pid=55374 dir=/var/folders/ys/htgd5l2d5glftgwc7d2gdkq40000gn/T/pn-stale-hmPP3U src=file:///Users/mingpeiwang/Desktop/Code%E5%B7%A5%E4%BD%9C%E5%8C%BA/permission-notify/src/index.ts
+2026-11-19T14:38:34.327Z published event per_test action=external_directory
+2026-11-19T14:38:34.328Z reclaimed lock per_test (owner pid 999999 gone)
+2026-11-19T14:38:35.358Z replied per_test -> once after 1031ms outcome=ok
+2026-11-19T14:38:35.402Z started v0.1.1+classes pid=55374 dir=/var/folders/ys/htgd5l2d5glftgwc7d2gdkq40000gn/T/pn-stale-hmPP3U src=file:///Users/mingpeiwang/Desktop/Code%E5%B7%A5%E4%BD%9C%E5%8C%BA/permission-notify/src/index.ts
+2026-11-19T14:38:35.403Z published event per_test action=external_directory
+2026-11-19T14:38:35.555Z list failed per_test outcome=error stage=verify: Error: list unavailable
+2026-11-19T14:38:35.707Z list failed per_test outcome=error stage=verify: Error: list unavailable
+2026-11-19T14:38:35.859Z list failed per_test outcome=error stage=verify: Error: list unavailable
+2026-11-19T14:38:36.011Z list failed per_test outcome=error stage=verify: Error: list unavailable
+2026-11-19T14:38:36.162Z list failed per_test outcome=error stage=verify: Error: list unavailable
+2026-11-19T14:38:36.314Z list failed per_test outcome=error stage=verify: Error: list unavailable
+2026-11-19T14:38:36.314Z list failed per_test outcome=error stage=verify: Error: list unavailable
+2026-11-19T14:38:36.435Z list failed per_test outcome=error stage=verify: Error: list unavailable
+2026-11-19T14:38:36.436Z replied per_test -> once after 1033ms outcome=ok

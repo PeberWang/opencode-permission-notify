@@ -47,11 +47,51 @@ ctx.permission.reply({ sessionID, requestID, decision })
 
 The three buttons map to the `once` / `always` / `reject` decisions.
 
+## Permission classes
+
+Every request is classified once, in the `permission` `evaluate` hook, before
+OpenCode publishes it. There are six classes and three tiers:
+
+| Class | What | Default tier |
+| --- | --- | --- |
+| 1 | Irreversible or out of bounds: delete, sudo, credentials, publish/push, writes outside the project, anything unclassifiable | human |
+| 2 | Read outside the project | pm |
+| 3 | Run a shell command inside the project | pm |
+| 4 | Write inside the project | pm |
+| 5 | Read inside the project | silent |
+| 6 | No side effects (queries, listing, reading OpenCode config) | silent |
+
+`human` shows the panel and waits; `pm` is meant for an external reviewer (not
+wired up yet, so it is allowed and logged as `pm-offline`); `silent` is allowed
+and logged.
+
+How this combines with the `permissions` in `opencode.jsonc`:
+
+1. A host `deny` always wins; the plugin never loosens it.
+2. A tier you set explicitly overrides a host `ask` (and `allow`).
+3. Otherwise a host `allow` moves the class one tier lighter, and a host `ask` goes to a human.
+4. With no matching host rule, the default tier applies.
+
+Settings (only the classes you changed are stored):
+`~/Library/Application Support/opencode/permission-notify/settings.json`,
+e.g. `{"permissionClasses": {"3": "silent"}}`. Edit it with the settings window
+(`/permission-classes` in OpenCode, or run `bin/permission-settings`); changes
+apply to the next request without restarting OpenCode.
+
+Decision ledger (JSONL, one line per decision):
+`~/Library/Application Support/opencode/permission-notify/ledger.jsonl`.
+Fields include `ts`, `session`, `action`, `resources`, `host_effect`, `host_rule`,
+`class`, `source` (`default` / `user` / `host`), `tier`, `reason`, `why`, `effect`.
+See `HANDOFF.md` for the full list.
+
 ## Configuration
 
 | Environment variable | Description |
 | --- | --- |
 | `PERMISSION_NOTIFY_HELPER` | Override the helper path (rarely needed) |
+| `PERMISSION_NOTIFY_SETTINGS` | Override the settings file |
+| `PERMISSION_NOTIFY_LEDGER` | Override the ledger file |
+| `PERMISSION_NOTIFY_ASK_TIMEOUT_S` | Seconds before an unanswered panel counts as a rejection (default 300) |
 
 Log file: `~/Library/Application Support/opencode/permission-notify/notify.log`
 
@@ -60,7 +100,7 @@ Log file: `~/Library/Application Support/opencode/permission-notify/notify.log`
 Requires Xcode Command Line Tools:
 
 ```sh
-./build.sh          # builds bin/notify-request (universal)
+./build.sh          # builds bin/notify-request and bin/permission-settings (universal)
 ```
 
 ## Limitations
@@ -82,3 +122,7 @@ MIT
 
 安装：在 `~/.config/opencode/opencode.jsonc` 的 `plugins` 中加 `"opencode-permission-notify"`。
 仅支持 macOS + OpenCode V2。
+
+授权分级（六类三档，与宿主配置合成）见上文 Permission classes。设置文件
+`~/Library/Application Support/opencode/permission-notify/settings.json`（配置项 `permissionClasses`），
+判定台账 `~/Library/Application Support/opencode/permission-notify/ledger.jsonl`，一次判定一行。

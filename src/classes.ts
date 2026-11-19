@@ -355,6 +355,8 @@ export interface Resolution {
   tier: Tier | "deny"
   source: Source
   why: string
+  /** 兜底改档的原因；目前只有方案 A：类 1 落到 pm 而案头离线，转人工 */
+  fallback?: "class1-pm-offline"
 }
 
 /** 更省事的一档：human → pm → silent */
@@ -369,6 +371,9 @@ export function lighter(tier: Tier): Tier {
  * 3. 用户没改过时听宿主：allow 取比默认更省事的一档，ask 交给人；
  * 4. 宿主没有匹配规则，才用默认档位。
  * 通配 allow（如 shell * allow）按第 3 条处理，不当成用户点名允许。
+ *
+ * 方案 A 兜底：类 1 经宿主放行降到 pm、而案头不在线时，改为 human（用户显式设置的档位不受影响）。
+ * 回退到方案 C（离线照旧放行）：调用方传 pmOnline: true 或去掉这段。
  */
 export function resolve(input: {
   cls: ClassID
@@ -377,7 +382,17 @@ export function resolve(input: {
   hostEffect: Effect
   /** 宿主配置里是否有规则匹配；没有规则但 OpenCode 仍判了 ask/deny（会话规则、已保存授权等）也算有 */
   hostMatched: boolean
+  /** 案头是否在线；缺省按在线，不触发兜底 */
+  pmOnline?: boolean
 }): Resolution {
+  const r = merge(input)
+  if (r.tier === "pm" && input.cls === "1" && r.source !== "user" && input.pmOnline === false) {
+    return { tier: "human", source: r.source, why: `${r.why}；案头离线，类 1 转人工`, fallback: "class1-pm-offline" }
+  }
+  return r
+}
+
+function merge(input: Parameters<typeof resolve>[0]): Resolution {
   const { cls, user, hostEffect } = input
   const fallback = DEFAULT_CLASSES[cls]
   if (hostEffect === "deny") return { tier: "deny", source: "host", why: "宿主规则拒绝" }

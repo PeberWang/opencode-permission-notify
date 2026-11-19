@@ -82,6 +82,10 @@ const GRANTS = process.env.PERMISSION_NOTIFY_GRANTS ?? join(INSTALL_DIR, "grants
 const PENDING = process.env.PERMISSION_NOTIFY_PENDING ?? join(INSTALL_DIR, "pending")
 const REPLIES = process.env.PERMISSION_NOTIFY_REPLIES ?? join(INSTALL_DIR, "replies")
 
+/** 案头心跳：案头在线时定期刷新这个文件的修改时间，超过 PM_TTL_S 秒没刷新就算离线 */
+const PM_HEARTBEAT = process.env.PERMISSION_NOTIFY_PM_HEARTBEAT ?? join(INSTALL_DIR, "pm-online")
+const PM_TTL_S = Number(process.env.PERMISSION_NOTIFY_PM_TTL_S ?? 60)
+
 const BATCH_WINDOW_MS = Number(process.env.PERMISSION_NOTIFY_BATCH_MS ?? 600)
 const ASK_TIMEOUT_S = Number(process.env.PERMISSION_NOTIFY_ASK_TIMEOUT_S ?? 300)
 const LEDGER_MAX_BYTES = 10 * 1024 * 1024
@@ -131,6 +135,14 @@ function userClasses(): Partial<Record<ClassID, Tier>> {
     return classes
   } catch {
     return {}
+  }
+}
+
+function pmOnline(): boolean {
+  try {
+    return Date.now() - statSync(PM_HEARTBEAT).mtimeMs <= PM_TTL_S * 1000
+  } catch {
+    return false
   }
 }
 
@@ -441,7 +453,8 @@ async function judge(ctx: any, event: any): Promise<Outcome> {
   const rules = await rulesFor(ctx, event.agent)
   const match = rules ? hostMatch(rules, event.action, resources) : undefined
   const hostEffect: Effect = event.effect
-  const resolution: Resolution = resolve({ cls: classified.cls, user: userClasses(), hostEffect, hostMatched: !!match })
+  const online = pmOnline()
+  const resolution: Resolution = resolve({ cls: classified.cls, user: userClasses(), hostEffect, hostMatched: !!match, pmOnline: online })
   const who = describeWho(info, event.sessionID, event.agent)
   if (call) call.judged += 1
 
@@ -464,6 +477,7 @@ async function judge(ctx: any, event: any): Promise<Outcome> {
       tier: resolution.tier,
       reason: classified.reason,
       why: resolution.why,
+      ...(resolution.fallback ? { fallback: resolution.fallback } : {}),
     },
   }
 
@@ -473,8 +487,8 @@ async function judge(ctx: any, event: any): Promise<Outcome> {
     case "silent":
       return finishItem(item, "allow")
     case "pm":
-      // 案头接入（读台账、对 pm 档作答）另行实现；目前没有在线判定，一律按放行处理
-      return finishItem(item, "allow", { note: "pm-offline" })
+      // 托管：放行并留痕，案头读台账复核（方案 A）；离线时也放行，类 1 已在 resolve 里转人工
+      return finishItem(item, "allow", { note: online ? "pm-online" : "pm-offline" })
     case "human": {
       const hit = granted(classified)
       if (hit) return finishItem(item, "allow", { note: "grant", grant: hit.id })

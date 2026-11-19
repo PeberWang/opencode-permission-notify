@@ -118,6 +118,42 @@ test("合成五条：deny 不放宽，用户显式优先，宿主 allow 取更�
   }
 })
 
+test("方案 A：类 1 经通配 allow 降到 pm、案头离线时转人工；其余类与在线时不变；用户设置优先", () => {
+  const wildcard: HostRule[] = [...base, { action: "shell", resource: "*", effect: "allow" }]
+  const push = classify(ev("shell", ["git push origin main"]), ctx())
+  const match = hostMatch(wildcard, "shell", ["git push origin main"])
+  assert.equal(push.cls, "1")
+  assert.deepEqual(match?.rule, { action: "shell", resource: "*", effect: "allow" })
+
+  // 通配 allow 下的类 1，离线 → human，并标出兜底原因
+  const offline = resolve({ cls: push.cls, user: {}, hostEffect: "allow", hostMatched: !!match, pmOnline: false })
+  assert.equal(offline.tier, "human")
+  assert.equal(offline.source, "host")
+  assert.equal(offline.fallback, "class1-pm-offline")
+  assert.match(offline.why, /案头离线，类 1 转人工/)
+
+  // 在线 → 仍是 pm，没有兜底标记
+  const online = resolve({ cls: "1", user: {}, hostEffect: "allow", hostMatched: true, pmOnline: true })
+  assert.deepEqual([online.tier, online.fallback], ["pm", undefined])
+
+  // 类 2、3、4 落到 pm 时离线照旧（pm，交给调用方按 pm-offline 放行）
+  for (const c of ["2", "3", "4"] as const) {
+    const r = resolve({ cls: c, user: {}, hostEffect: "allow", hostMatched: false, pmOnline: false })
+    assert.deepEqual([r.tier, r.source, r.fallback], ["pm", "default", undefined])
+  }
+  const shell3 = resolve({ cls: "3", user: { "3": "pm" }, hostEffect: "allow", hostMatched: true, pmOnline: false })
+  assert.deepEqual([shell3.tier, shell3.fallback], ["pm", undefined])
+
+  // 用户显式把类 1 设为 silent（或 pm）：以用户为准，不兜底，来源 user
+  const silent = resolve({ cls: "1", user: { "1": "silent" }, hostEffect: "allow", hostMatched: true, pmOnline: false })
+  assert.deepEqual([silent.tier, silent.source, silent.fallback], ["silent", "user", undefined])
+  const pm = resolve({ cls: "1", user: { "1": "pm" }, hostEffect: "allow", hostMatched: true, pmOnline: false })
+  assert.deepEqual([pm.tier, pm.source, pm.fallback], ["pm", "user", undefined])
+
+  // 兜底不放宽 deny
+  assert.equal(resolve({ cls: "1", user: {}, hostEffect: "deny", hostMatched: true, pmOnline: false }).tier, "deny")
+})
+
 test("设置解析只收合法项；弹窗正文不超过四行", () => {
   assert.deepEqual(parseClasses({ "1": "human", "3": "silent", "7": "pm", "2": "maybe" }), { "1": "human", "3": "silent" })
   assert.deepEqual(parseClasses(undefined), {})

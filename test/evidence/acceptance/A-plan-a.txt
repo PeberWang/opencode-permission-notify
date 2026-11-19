@@ -1,0 +1,84 @@
+## 方案 A：类 1 落到 pm 且案头离线时转人工
+场景 p5-plain，宿主只有全局规则（shell * allow 等）。案头心跳文件 test/run/pm-online（不存在或超过 60 秒未刷新 = 离线）。
+
+## 1. 案头离线，类 1 经通配 allow 降到 pm → 弹窗问人
+
+### 1a 替身点「拒绝」
+$ A shell git push origin main
+{"status": 200, "ms": 1634, "body": {"data": {"id": "per_1f58e0e850011LRgi0UHP5DK1v", "effect": "deny"}}}
+--- 替身弹窗调用次数：1
+    2026-11-19T20:44:49 fake-helper --title OpenCode 需要授权 --message git push origin main --buttons 允许一次|总是允许|拒绝 --slot 0 --timeout 300
+--- 台账新增 1 行：
+{"v":2,"ts":"2026-11-19T20:44:50.180Z","session":"ses_e0a72049bffe4dZZi6SVsbmjt6","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["git push origin main"],"host_effect":"allow","host_rule":{"action":"shell","resource":"*","effect":"allow"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"human","reason":"对外发布或发送数据","why":"宿主规则放行，默认 human 取更省事一档 pm；案头离线，类 1 转人工","fallback":"class1-pm-offline","effect":"deny","batch":"bat_mwo0qwq1ell3","by":"popup","answer":"reject"}
+
+### 1b 替身返回 -1（取消 / 超时）
+$ A shell git push origin dev
+{"status": 200, "ms": 1635, "body": {"data": {"id": "per_1f58e1581001Vx1S063IfH7hgn", "effect": "deny"}}}
+--- 替身弹窗调用次数：1
+    2026-11-19T20:44:50 fake-helper --title OpenCode 需要授权 --message git push origin dev --buttons 允许一次|总是允许|拒绝 --slot 0 --timeout 300
+--- 台账新增 1 行：
+{"v":2,"ts":"2026-11-19T20:44:51.968Z","session":"ses_e0a72049bffe4dZZi6SVsbmjt6","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["git push origin dev"],"host_effect":"allow","host_rule":{"action":"shell","resource":"*","effect":"allow"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"human","reason":"对外发布或发送数据","why":"宿主规则放行，默认 human 取更省事一档 pm；案头离线，类 1 转人工","fallback":"class1-pm-offline","effect":"deny","batch":"bat_mwo0qy3nvwpt","by":"timeout","answer":"timeout"}
+
+### 1c 替身点「允许一次」（证明这条路径确实在等人）
+$ A shell git push origin feat
+{"status": 200, "ms": 1638, "body": {"data": {"id": "per_1f58e1c7f001ITSJqVSTt6vDuA", "effect": "allow"}}}
+--- 替身弹窗调用次数：1
+    2026-11-19T20:44:52 fake-helper --title OpenCode 需要授权 --message git push origin feat --buttons 允许一次|总是允许|拒绝 --slot 0 --timeout 300
+--- 台账新增 1 行：
+{"v":2,"ts":"2026-11-19T20:44:53.759Z","session":"ses_e0a72049bffe4dZZi6SVsbmjt6","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["git push origin feat"],"host_effect":"allow","host_rule":{"action":"shell","resource":"*","effect":"allow"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"human","reason":"对外发布或发送数据","why":"宿主规则放行，默认 human 取更省事一档 pm；案头离线，类 1 转人工","fallback":"class1-pm-offline","effect":"allow","batch":"bat_mwo0qzh9aago","by":"popup","answer":"once"}
+
+## 2. 案头离线，类 2、3、4 落到 pm → 照旧放行（pm-offline），不弹窗
+$ cat test/run/settings.json   （全局宿主规则会把 2、3、4 降成 silent，所以用显式设置把它们放到 pm 档）
+{"permissionClasses":{"2":"pm","3":"pm","4":"pm"}}
+
+### 2a 类 2 项目外只读
+$ A read /etc/hosts
+{"status": 200, "ms": 4, "body": {"data": {"id": "per_1f58e1d1a001uU90d5ttZkmrk4", "effect": "allow"}}}
+--- 替身弹窗调用次数：0
+--- 台账新增 1 行：
+{"v":2,"ts":"2026-11-19T20:44:53.914Z","session":"ses_e0a72049bffe4dZZi6SVsbmjt6","who":"会话「pn-accept」（build）","agent":"build","action":"read","resources":["/etc/hosts"],"host_effect":"allow","host_rule":{"action":"read","resource":"*","effect":"allow"},"class":"2","class_name":"项目外只读","source":"user","tier":"pm","reason":"项目外只读","why":"用户设置类 2 为 pm","effect":"allow","note":"pm-offline"}
+
+### 2b 类 3 项目内执行
+$ A shell printf pn-plan-a
+{"status": 200, "ms": 5, "body": {"data": {"id": "per_1f58e1d99001paa94rM1k0o5nC", "effect": "allow"}}}
+--- 替身弹窗调用次数：0
+--- 台账新增 1 行：
+{"v":2,"ts":"2026-11-19T20:44:54.041Z","session":"ses_e0a72049bffe4dZZi6SVsbmjt6","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["printf pn-plan-a"],"host_effect":"allow","host_rule":{"action":"shell","resource":"*","effect":"allow"},"class":"3","class_name":"项目内执行","source":"user","tier":"pm","reason":"项目内执行","why":"用户设置类 3 为 pm","effect":"allow","note":"pm-offline"}
+
+### 2c 类 4 项目内写入
+$ A edit src/a.ts
+{"status": 200, "ms": 3, "body": {"data": {"id": "per_1f58e1e1000112VLW325cYoM5z", "effect": "allow"}}}
+--- 替身弹窗调用次数：0
+--- 台账新增 1 行：
+{"v":2,"ts":"2026-11-19T20:44:54.160Z","session":"ses_e0a72049bffe4dZZi6SVsbmjt6","who":"会话「pn-accept」（build）","agent":"build","action":"edit","resources":["src/a.ts"],"host_effect":"allow","host_rule":{"action":"edit","resource":"*","effect":"allow"},"class":"4","class_name":"项目内写入","source":"user","tier":"pm","reason":"项目内写入","why":"用户设置类 4 为 pm","effect":"allow","note":"pm-offline"}
+
+## 3. 案头在线，类 1 仍走 pm 托管（pm-online），不弹窗
+$ touch test/run/pm-online   （mtime 14:44:54）
+
+### 3a 类 1，案头在线
+$ A shell git push origin release
+{"status": 200, "ms": 3, "body": {"data": {"id": "per_1f58e1e92001shXivNnIN7XVSe", "effect": "allow"}}}
+--- 替身弹窗调用次数：0
+--- 台账新增 1 行：
+{"v":2,"ts":"2026-11-19T20:44:54.290Z","session":"ses_e0a72049bffe4dZZi6SVsbmjt6","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["git push origin release"],"host_effect":"allow","host_rule":{"action":"shell","resource":"*","effect":"allow"},"class":"1","class_name":"不可逆或越界","source":"host","tier":"pm","reason":"对外发布或发送数据","why":"宿主规则放行，默认 human 取更省事一档 pm","effect":"allow","note":"pm-online"}
+
+## 4. 用户把类 1 显式设为 silent：以用户为准，来源 user，不弹窗
+$ cat test/run/settings.json
+{"permissionClasses":{"1":"silent"}}
+
+### 4a 类 1，案头离线，用户 silent
+$ A shell git push origin hotfix
+{"status": 200, "ms": 3, "body": {"data": {"id": "per_1f58e1f11001uglzpeED4q6OwX", "effect": "allow"}}}
+--- 替身弹窗调用次数：0
+--- 台账新增 1 行：
+{"v":2,"ts":"2026-11-19T20:44:54.417Z","session":"ses_e0a72049bffe4dZZi6SVsbmjt6","who":"会话「pn-accept」（build）","agent":"build","action":"shell","resources":["git push origin hotfix"],"host_effect":"allow","host_rule":{"action":"shell","resource":"*","effect":"allow"},"class":"1","class_name":"不可逆或越界","source":"user","tier":"silent","reason":"对外发布或发送数据","why":"用户设置类 1 为 silent","effect":"allow"}
+
+## 5. 台账校验（上面共 8 次判定）
+$ python3 -I test/check-ledger.py test/run/ledger.jsonl 8
+台账 run/ledger.jsonl：8 行
+按类： {'1': 5, '2': 1, '3': 1, '4': 1}
+按来源： {'host': 4, 'user': 4}
+按档位： {'human': 3, 'pm': 4, 'silent': 1}
+预期 8 行，实际 8 行：一致
+问题：无
+exit=0

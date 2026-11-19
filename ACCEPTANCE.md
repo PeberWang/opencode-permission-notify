@@ -1,7 +1,7 @@
 # ACCEPTANCE：授权分级（六类三档）真机验收
 
 日期：2026-11-19（本机 12:04–12:11，UTC 18:04–18:11）。OpenCode CLI 2.3.2（arm64），macOS 27.0。
-证据目录：`test/evidence/acceptance/`。结果：**八条全部通过**；第 4 条附带发现一处规格层面的问题，见文末。
+证据目录：`test/evidence/acceptance/`。结果：**八条全部通过**；第 4 条附带发现的规格问题已按方案 A 处理，验证见文末「方案 A」一节。
 
 ## 环境
 
@@ -82,3 +82,28 @@
 - 宿主 deny 补记判据：原先按报错文本里的关键词（deny / permission…）匹配。实测 deny 的报错是 “Unable to execute command: <命令>”，3b 能命中只是因为命令里的文件名 `deny-proof.txt` 恰好含 “deny”；换个命令就会漏记，而文件系统的 “permission denied” 又可能误中。改为认 `Permission.BlockedError`，3c 正反两例验证。
 - 设置窗口的「人工 human」与来源说明被截断，调整布局后重截。
 - 场景命令起初用 `echo pn-*`，发现本仓库在 OpenCode 里存有「总是允许 `shell echo *`」，会让宿主 ask 失效，改用 `printf pn-*` 重跑；正式记录只取改用之后、清空台账后的一轮。
+
+---
+
+## 方案 A：类 1 降到 pm 且案头离线时转人工（2026-11-19 追加）
+
+决定：执行方案 A。环境同上（私有服务端、fake 轮，全局配置未改、已保存授权未动）；场景 `test/run/projects/p5-plain`，只有全局宿主规则（含 `shell * allow`）。
+复跑：`FAKE_DELAY=1 test/serve-isolated.sh fake` 起服务端，再跑 `test/acceptance-plan-a.sh`。替身弹窗按 `test/run/fake-index` 里的序号作答（2 = 拒绝，0 = 允许一次，-1 = 取消 / 超时，与真助手超时或关窗的返回值相同）。
+案头在线判定：心跳文件（隔离环境为 `test/run/pm-online`）存在且 60 秒内刷新过。证据：`A-plan-a.txt`、`ledger-plan-a.jsonl`、`A-typecheck-test.txt`。
+
+| # | 验收标准 | 结果 | 实测 |
+|---|---|---|---|
+| 1 | 类 1 经通配 allow 降到 pm、案头离线 → 弹窗问人，取消或超时按拒绝 | 通过 | `git push origin main`：替身弹窗被调用（标题「OpenCode 需要授权」、正文为该命令），点拒绝 → deny；`git push origin dev`：返回 -1 → deny，`answer timeout`；`git push origin feat`：点允许一次 → allow（说明确实在等人） |
+| 2 | 类 2、3、4 在 pm 且离线照旧放行 | 通过 | 设置 `{"2":"pm","3":"pm","4":"pm"}`（全局规则会把它们降成 silent，所以用显式设置放到 pm），`read /etc/hosts`、`printf pn-plan-a`、`edit src/a.ts` 均 4 ms allow，`note pm-offline`，替身调用 0 次 |
+| 3 | 案头在线时类 1 不变，仍按 pm 托管 | 通过 | `touch` 心跳后 `git push origin release`：allow，`tier pm`、`note pm-online`，无 `fallback`，替身调用 0 次 |
+| 4 | 用户显式把类 1 设为 silent 时以用户为准，来源 user | 通过 | 设置 `{"1":"silent"}`，离线下 `git push origin hotfix`：allow，`source user / tier silent`，无 `fallback`，替身调用 0 次 |
+| 5 | 一判一行，字段齐全；兜底行能看出是离线兜底 | 通过 | 8 次判定 8 行，`check-ledger.py` 无问题；三条兜底行均为 `tier human`、`fallback "class1-pm-offline"`、`why` 以「案头离线，类 1 转人工」结尾，`answer` 分别为 reject / timeout / once；普通 pm 放行行是 `tier pm` + `note pm-offline`，两者可区分 |
+| 6 | typecheck 与 test 全过，新增用例覆盖三种情形 | 通过 | `npm run typecheck` 0 错误；`npm test` 17 个全过，新增用例「方案 A：…」覆盖通配 allow 下类 1 离线转人工、类 3（及 2、4）离线仍是 pm、类 1 用户设为 silent / pm 时优先，另验证在线不兜底、兜底不放宽 deny |
+
+兜底行示例（`ledger-plan-a.jsonl` 第 1 行，节选）：
+
+```json
+{"action":"shell","resources":["git push origin main"],"host_effect":"allow","host_rule":{"action":"shell","resource":"*","effect":"allow"},"class":"1","source":"host","tier":"human","why":"宿主规则放行，默认 human 取更省事一档 pm；案头离线，类 1 转人工","fallback":"class1-pm-offline","effect":"deny","by":"popup","answer":"reject"}
+```
+
+说明：本轮用替身助手验证调用与回答路径，没有再弹真窗。真助手的弹窗外观与按钮已在第 4 条实测；它在取消或超时时输出 -1，这一点来自源码（`native/notify-request.m` 第 9、186–189 行），没有在真机上等满超时实测过。验证建的 2 个会话已删除，`test/run/` 下的设置、心跳、替身序号文件都已清除。

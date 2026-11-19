@@ -92,7 +92,7 @@
 
 - 在 OpenCode 里输入 `/permission-classes`；或直接运行 `bin/permission-settings`（默认指向上面的线上设置文件与台账）。
 - `--settings <文件> --ledger <文件>` 指定别的文件；`--print` 不开窗口，把六行当前状态打印成 JSON。
-- 每行：类名与一句说明、三档单选、来源（默认 / 用户改过 / 跟随宿主 · 最近 ask → human）、「恢复默认」。点选即原子写回，只改 `permissionClasses`，保留文件里其他键。
+- 每行：类名与一句说明、三档单选、来源（默认 / 用户改过 / 跟随宿主 · 最近 ask → human）、「恢复默认」。点选即原子写回，只改 `permissionClasses`，保留文件里其他键。中英双语，见 §10。
 - 「跟随宿主」看的是台账里这一类最近一次判定，是历史状态，不是对下一次的预测。
 
 ## 7. 回滚
@@ -119,3 +119,21 @@
 - 验收全程用私有服务端（`test/serve-isolated.sh`，端口 4199），台账、设置、授权都写在 `test/run/`（已忽略），全局 `opencode.jsonc` 未改动。场景项目的宿主规则写在 `test/run/projects/*/opencode.jsonc`，只在那几个目录生效。
 - 验收建的 19 个会话已通过 API 删除；之后 3c 补跑又建了 2 个已归档会话（pn-accept-eacces2、pn-accept-blocked），不在会话列表里，未删。更早几轮留下的会话没动：未归档的 `ses_e0bc22f4fffeBh6Qmekw2FQ4YG`（test/run/sandbox）、`ses_e0bdb3679ffeHKt1uh4qrqPx7N`（test/accept/proj），以及已归档的 pn-tier-test / pn-probe 共 5 个。
 - 本仓库的代码已在日常 OpenCode 里按本地路径加载；这次的改动要等 OpenCode 重启才会生效。
+
+## 10. 界面语言（中英双语，2026-11-19 追加）
+
+设置窗口与授权弹窗跟随同一个语言设置；判定、台账、`--print` 的旧字段都不随语言变。
+
+- **字段**：`settings.json` 的 `uiLanguage`，取值 `"zh"` 或 `"en"`。缺省或取值不合法即「跟随系统」。这是 `permissionClasses` 之外唯一新增的键；两边写设置文件都只改自己那个键、保留其他键。
+- **跟随规则**：`uiLanguage` 优先；没有时看系统首选语言列表的第一项，以 `zh` 开头（zh-Hans、zh-Hant-HK 等）显示中文，其余一律英文。设置窗口用 `NSLocale.preferredLanguages`；插件（弹窗）用 `defaults read -g AppleLanguages`，每个进程只查一次（OpenCode 桌面版从 GUI 启动，往往没有 `LANG`，`Intl` 不可靠），所以改了系统语言要重启 OpenCode 弹窗才跟上；`uiLanguage` 则按文件 mtime 即时生效。
+- **切换**：设置窗口右下角「跟随系统 / 中文 / English」。点「中文」「English」写入 `uiLanguage` 并当场整窗重排（按新语言实测各列宽度，窗口左上角不动）；点「跟随系统」删掉这个键。任务书只要求中文 / English 两项，加「跟随系统」是为了切过之后还能回到自动。
+- **不随语言变的东西**：判定一律用英文 key（human / pm / silent），台账的 `reason`、`class_name` 不变；`--print` 的 `label`、`detail` 固定中文、取值与改动前一致，另外新增 `ui_label`、`ui_detail`（当前界面语言的版本）。
+- **中文标点**：首选语言里繁体排在简体前面（本机就是 en-US、zh-Hant-HK、zh-Hans-HK）时，不标语言的中文会把「、。」画在字格正中。设置窗口的文字一律经 `setText()` 标上 `zh-Hans` / `en`。
+- **弹窗**：标题「OpenCode 需要授权 / OpenCode needs permission」，按钮「允许一次|总是允许|拒绝 / Allow once|Always allow|Reject」，超过四项时第四行是「…另 N 项 / …and N more」。助手 `notify-request` 现在每行不折行、超宽在中间截断、最多四行，中英文高度一样；之前是自动折行，80 字的长命令会折成两三行，实际不止四行。
+
+**以后加文案要改两处：**
+
+1. 设置窗口：`native/permission-settings.m` 的 `kStrings` 表，`zh` 和 `en` 各加一行同名键，代码里用 `T(@"键")` 取；新加的文字框用 `setText()` 赋值。改完 `./build.sh`。
+2. 弹窗：`src/index.ts` 的 `POPUP_TEXT`（标题、按钮），正文里的固定措辞在 `src/classes.ts` `promptBody()`（目前只有「…另 N 项」）。
+
+验收截图在 `tmp/i18n/`（未入库）。

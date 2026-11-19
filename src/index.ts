@@ -1,5 +1,5 @@
 import { Plugin } from "@opencode/plugin"
-import { execFile, spawn } from "node:child_process"
+import { execFile, execFileSync, spawn } from "node:child_process"
 import {
   chmodSync,
   copyFileSync,
@@ -124,18 +124,49 @@ function record(entry: Record<string, unknown>) {
 
 // ---------- 设置：每次判定都看一眼文件，改完即生效 ----------
 
-let settingsCache: { mtime: number; classes: Partial<Record<ClassID, Tier>> } | undefined
+type Lang = "zh" | "en"
 
-function userClasses(): Partial<Record<ClassID, Tier>> {
+let settingsCache: { mtime: number; classes: Partial<Record<ClassID, Tier>>; lang?: Lang } | undefined
+
+function readSettings() {
   try {
     const mtime = statSync(SETTINGS).mtimeMs
-    if (settingsCache?.mtime === mtime) return settingsCache.classes
-    const classes = parseClasses(JSON.parse(readFileSync(SETTINGS, "utf8")).permissionClasses)
-    settingsCache = { mtime, classes }
-    return classes
+    if (settingsCache?.mtime === mtime) return settingsCache
+    const raw = JSON.parse(readFileSync(SETTINGS, "utf8"))
+    const lang = raw.uiLanguage === "zh" || raw.uiLanguage === "en" ? (raw.uiLanguage as Lang) : undefined
+    settingsCache = { mtime, classes: parseClasses(raw.permissionClasses), lang }
+    return settingsCache
   } catch {
-    return {}
+    return undefined
   }
+}
+
+function userClasses(): Partial<Record<ClassID, Tier>> {
+  return readSettings()?.classes ?? {}
+}
+
+/** 系统首选语言：只查一次（GUI 启动的进程往往没有 LANG，问 defaults 最准） */
+let systemLang: Lang | undefined
+function detectSystemLang(): Lang {
+  if (systemLang) return systemLang
+  let first = ""
+  try {
+    const out = execFileSync("/usr/bin/defaults", ["read", "-g", "AppleLanguages"], { encoding: "utf8", timeout: 2000 })
+    first = out.match(/"?([A-Za-z][\w-]*)"?\s*,?\s*\n/)?.[1] ?? ""
+  } catch {}
+  if (!first) first = Intl.DateTimeFormat().resolvedOptions().locale
+  systemLang = first.toLowerCase().startsWith("zh") ? "zh" : "en"
+  return systemLang
+}
+
+/** 弹窗语言：设置窗口存下的 uiLanguage 优先，否则跟随系统；只管显示，判定与台账不受影响 */
+function uiLang(): Lang {
+  return readSettings()?.lang ?? detectSystemLang()
+}
+
+const POPUP_TEXT: Record<Lang, { title: string; buttons: string }> = {
+  zh: { title: "OpenCode 需要授权", buttons: "允许一次|总是允许|拒绝" },
+  en: { title: "OpenCode needs permission", buttons: "Allow once|Always allow|Reject" },
 }
 
 function pmOnline(): boolean {
@@ -271,23 +302,23 @@ function describeWho(info: SessionInfo | undefined, sessionID: string, agent?: s
 
 /** 返回按钮索引；-1 超时/取消；-2 OpenCode 在前台；-3 被 signal 收回 */
 function ask(
-  title: string,
   message: string,
   slot = 0,
   signal?: AbortSignal,
   options: { skipFrontmost?: boolean; timeoutSeconds?: number } = {},
 ): Promise<number> {
   const timeoutSeconds = options.timeoutSeconds ?? ASK_TIMEOUT_S
+  const text = POPUP_TEXT[uiLang()]
   return new Promise((resolve) => {
     execFile(
       HELPER,
       [
         "--title",
-        title,
+        text.title,
         "--message",
         message,
         "--buttons",
-        "允许一次|总是允许|拒绝",
+        text.buttons,
         ...(options.skipFrontmost ? ["--skip-if-frontmost", "ai.opencode.desktop"] : []),
         "--slot",
         String(slot),
@@ -336,7 +367,7 @@ async function runBatch(batch: Batch) {
   }, 500)
   let index: number
   try {
-    index = await ask("OpenCode 需要授权", promptBody(what), Math.min(batches.size - 1, 4), stop.signal)
+    index = await ask(promptBody(what, uiLang()), Math.min(batches.size - 1, 4), stop.signal)
   } finally {
     clearInterval(watcher)
     try {
@@ -622,7 +653,7 @@ async function handlePublished(ctx: any, data: any) {
     }
 
     const resources: string[] = Array.isArray(data.resources) ? data.resources : []
-    const message = promptBody(resources.length ? resources.map((r) => `${data.action} ${r}`) : [String(data.action)])
+    const message = promptBody(resources.length ? resources.map((r) => `${data.action} ${r}`) : [String(data.action)], uiLang())
     // 弹窗开着期间请求在别处被处理：收回窗口，让人点不到一个已经不存在的请求
     const dismiss = new AbortController()
     const watcher = setInterval(async () => {
@@ -630,7 +661,7 @@ async function handlePublished(ctx: any, data: any) {
     }, WATCH_EVERY_MS)
     let index: number
     try {
-      index = await ask("OpenCode 需要授权", message, 0, dismiss.signal, { skipFrontmost: true })
+      index = await ask(message, 0, dismiss.signal, { skipFrontmost: true })
     } finally {
       clearInterval(watcher)
     }

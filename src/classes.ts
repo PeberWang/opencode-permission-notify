@@ -416,10 +416,11 @@ export function parseClasses(raw: unknown): Partial<Record<ClassID, Tier>> {
   return out
 }
 
-/** 弹窗正文：只列动作与命令或路径，最多四行，每行最多 80 字 */
-export function promptBody(what: readonly string[]): string {
+/** 弹窗正文：只列动作与命令或路径，最多四行，每行最多 80 字（助手再按窗口宽度在中间截断，不折行） */
+export function promptBody(what: readonly string[], lang: "zh" | "en" = "zh"): string {
   const cut = (s: string) => (s.length > 80 ? `${s.slice(0, 80)}…` : s)
-  const lines = what.length > 4 ? [...what.slice(0, 3).map(cut), `…另 ${what.length - 3} 项`] : what.map(cut)
+  const more = (n: number) => (lang === "en" ? `…and ${n} more` : `…另 ${n} 项`)
+  const lines = what.length > 4 ? [...what.slice(0, 3).map(cut), more(what.length - 3)] : what.map(cut)
   return lines.join("\n")
 }
 

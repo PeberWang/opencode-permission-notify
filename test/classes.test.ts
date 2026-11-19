@@ -160,6 +160,8 @@ test("设置解析只收合法项；弹窗正文不超过四行", () => {
   assert.equal(promptBody(["a", "b"]), "a\nb")
   assert.equal(promptBody(["1", "2", "3", "4", "5", "6"]).split("\n").length, 4)
   assert.equal(promptBody(["1", "2", "3", "4"]).split("\n").length, 4)
+  assert.equal(promptBody(["1", "2", "3", "4", "5", "6"]).split("\n")[3], "…另 3 项")
+  assert.equal(promptBody(["1", "2", "3", "4", "5", "6"], "en").split("\n")[3], "…and 3 more")
 })
 
 test("命令解析与授权覆盖", () => {

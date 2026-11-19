@@ -119,15 +119,21 @@ int main(int argc, const char *argv[]) {
         titleLabel.lineBreakMode = NSLineBreakByTruncatingTail;
         titleLabel.frame = NSMakeRect(padding, 0, contentWidth, 18);
 
-        NSTextField *bodyLabel = [NSTextField wrappingLabelWithString:message];
-        bodyLabel.font = [NSFont systemFontOfSize:11.5];
-        bodyLabel.textColor = [NSColor secondaryLabelColor];
-        NSRect bodyRect = [message boundingRectWithSize:NSMakeSize(contentWidth, 150)
-                                                options:NSStringDrawingUsesLineFragmentOrigin
-                                             attributes:@{ NSFontAttributeName: bodyLabel.font }];
-        CGFloat bodyHeight = ceil(bodyRect.size.height);
-        if (bodyHeight < 16) bodyHeight = 16;
-        if (bodyHeight > 150) bodyHeight = 150;
+        // 正文一行对一行：每行（命令或路径）不折行、超宽在中间截断，最多四行，中英文都一样高
+        NSArray<NSString *> *bodyLines = [message componentsSeparatedByString:@"\n"];
+        if (bodyLines.count > 4) bodyLines = [bodyLines subarrayWithRange:NSMakeRange(0, 4)];
+        NSString *body = [bodyLines componentsJoinedByString:@"\n"];
+        NSFont *bodyFont = [NSFont systemFontOfSize:11.5];
+        NSMutableParagraphStyle *paragraph = [NSMutableParagraphStyle new];
+        paragraph.lineBreakMode = NSLineBreakByTruncatingMiddle;
+        NSTextField *bodyLabel = [NSTextField labelWithAttributedString:
+            [[NSAttributedString alloc] initWithString:body
+                                            attributes:@{ NSFontAttributeName: bodyFont,
+                                                          NSForegroundColorAttributeName: [NSColor secondaryLabelColor],
+                                                          NSParagraphStyleAttributeName: paragraph }]];
+        bodyLabel.maximumNumberOfLines = 4;
+        bodyLabel.toolTip = body;
+        CGFloat bodyHeight = MAX(ceil([bodyLabel.cell cellSizeForBounds:NSMakeRect(0, 0, contentWidth, 1000)].height), 16);
 
         CGFloat buttonHeight = 24;
         CGFloat height = padding + 18 + 6 + bodyHeight + 10 + buttonHeight + padding;
